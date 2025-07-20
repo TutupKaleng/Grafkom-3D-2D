@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Graphics Demo - Kubus dan Piramida</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+        
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            max-width: 300px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #61dafb;
+        }
+        
+        .control-group input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        .control-group button {
+            background: #61dafb;
+            color: black;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .control-group button:hover {
+            background: #4fa8c5;
+        }
+        
+        .control-group button.active {
+            background: #ff6b6b;
+        }
+        
+        #info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        .title {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #61dafb;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="loading">Memuat model 3D...</div>
+        
+        <div id="controls">
+            <div class="title">🎮 3D Graphics Controls</div>
+            
+            <div class="control-group">
+                <label>Objek 3D:</label>
+                <button id="showCube" class="active">Kubus</button>
+                <button id="showPyramid">Piramida</button>
+                <button id="showBoth">Keduanya</button>
+                <button id="showImported">Imported OBJ</button>
+            </div>
+            
+            <div class="control-group">
+                <label>Rotasi Otomatis:</label>
+                <button id="toggleRotation">▶️ Start</button>
+                <button id="resetRotation">🔄 Reset</button>
+            </div>
+            
+            <div class="control-group">
+                <label>Pencahayaan:</label>
+                <div>
+                    <label>Ambient Light:</label>
+                    <input type="range" id="ambientLight" min="0" max="1" step="0.1" value="0.4">
+                </div>
+                <div>
+                    <label>Diffuse Light:</label>
+                    <input type="range" id="directionalLight" min="0" max="2" step="0.1" value="1">
+                </div>
+                <div>
+                    <label>Specular Intensity:</label>
+                    <input type="range" id="specularIntensity" min="0" max="1" step="0.1" value="0.8">
+                </div>
+                <div>
+                    <label>Light Position X:</label>
+                    <input type="range" id="lightX" min="-10" max="10" step="0.5" value="5">
+                </div>
+                <div>
+                    <label>Light Position Y:</label>
+                    <input type="range" id="lightY" min="-10" max="10" step="0.5" value="10">
+                </div>
+                <div>
+                    <label>Light Position Z:</label>
+                    <input type="range" id="lightZ" min="-10" max="10" step="0.5" value="5">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>Kamera:</label>
+                <div>
+                    <label>Posisi X:</label>
+                    <input type="range" id="cameraX" min="-10" max="10" step="0.5" value="5">
+                </div>
+                <div>
+                    <label>Posisi Y:</label>
+                    <input type="range" id="cameraY" min="-10" max="10" step="0.5" value="5">
+                </div>
+                <div>
+                    <label>Posisi Z:</label>
+                    <input type="range" id="cameraZ" min="2" max="15" step="0.5" value="8">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>Transformasi:</label>
+                <div>
+                    <label>Scale:</label>
+                    <input type="range" id="scaleSlider" min="0.5" max="3" step="0.1" value="1">
+                </div>
+                <div>
+                    <label>Posisi Y:</label>
+                    <input type="range" id="positionY" min="-3" max="3" step="0.1" value="0">
+                </div>
+            </div>
+        </div>
+        
+        <div id="info">
+            <strong>Kontrol:</strong><br>
+            • Mouse: Drag untuk rotasi kamera<br>
+            • Scroll: Zoom in/out<br>
+            • Keyboard: WASD untuk gerakan objek<br>
+            • Q/E: Naik/Turun objek
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <script>
+        // Variabel Global
+        let scene, camera, renderer;
+        let cube, pyramid, importedModel;
+        let ambientLight, directionalLight;
+        let isRotating = false;
+        let currentObject = 'cube';
+        
+        // Variabel untuk mouse control
+        let mouseX = 0, mouseY = 0;
+        let isMouseDown = false;
+        let targetRotationX = 0;
+        let targetRotationY = 0;
+        let actualRotationX = 0;
+        let actualRotationY = 0;
+        
+        // Variabel untuk keyboard control
+        let keys = {};
+        
+        // Inisialisasi Scene
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000510);
+            
+            // Camera (Perspektif)
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(5, 5, 8);
+            camera.lookAt(0, 0, 0);
+            
+            // Renderer dengan antialiasing dan shadow map
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('container').appendChild(renderer.domElement);
+            
+            // Pencahayaan
+            setupLighting();
+            
+            // Grid helper untuk referensi
+            const gridHelper = new THREE.GridHelper(20, 20, 0x555555, 0x333333);
+            scene.add(gridHelper);
+            
+            // Axes helper untuk referensi
+            const axesHelper = new THREE.AxesHelper(5);
+            scene.add(axesHelper);
+            
+            // Objek 3D
+            createObjects();
+            
+            // Load OBJ model
+            loadOBJModel();
+            
+            // Event Listeners
+            setupEventListeners();
+            
+            // Sembunyikan loading setelah semua selesai
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+            }, 500);
+            
+            // Mulai animasi
+            animate();
+        }
+        
+        function setupLighting() {
+            // Ambient Light - pencahayaan dasar
+            ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            scene.add(ambientLight);
+            
+            // Directional Light (Phong Lighting)
+            directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            
+            // Mengatur shadow camera untuk directional light
+            const d = 10;
+            directionalLight.shadow.camera.left = -d;
+            directionalLight.shadow.camera.right = d;
+            directionalLight.shadow.camera.top = d;
+            directionalLight.shadow.camera.bottom = -d;
+            directionalLight.shadow.camera.near = 2;
+            directionalLight.shadow.camera.far = 50;
+            
+            scene.add(directionalLight);
+            
+            // Light Helper (untuk visualisasi)
+            const lightHelper = new THREE.DirectionalLightHelper(directionalLight, 1);
+            scene.add(lightHelper);
+            
+            // Shadow helper (untuk visualisasi shadow camera)
+            const shadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
+            scene.add(shadowHelper);
+        }
+        
+        function createObjects() {
+            // Material dengan Phong Shading untuk menunjukkan diffuse dan specular
+            const cubeMaterial = new THREE.MeshPhongMaterial({
+                color: 0x00ff88,
+                shininess: 100,
+                specular: 0xffffff, // Specular color putih untuk efek lebih jelas
+                flatShading: false // Gouraud shading jika false, Phong jika true
+            });
+            
+            const pyramidMaterial = new THREE.MeshPhongMaterial({
+                color: 0xff6b6b,
+                shininess: 100,
+                specular: 0xffffff,
+                flatShading: false
+            });
+            
+            // Kubus (BoxGeometry)
+            const cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
+            cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-2, 0, 0);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+            
+            // Piramida (ConeGeometry dengan 4 sisi)
+            const pyramidGeometry = new THREE.ConeGeometry(1.5, 3, 4);
+            pyramid = new THREE.Mesh(pyramidGeometry, pyramidMaterial);
+            pyramid.position.set(2, 0, 0);
+            pyramid.castShadow = true;
+            pyramid.receiveShadow = true;
+            scene.add(pyramid);
+            
+            // Ground plane
+            const groundGeometry = new THREE.PlaneGeometry(20, 20);
+            const groundMaterial = new THREE.MeshPhongMaterial({
+                color: 0x333333,
+                shininess: 0,
+                side: THREE.DoubleSide
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+        }
+        
+        function loadOBJModel() {
+            // Membuat loader OBJ
+            const loader = new THREE.OBJLoader();
+            
+            // Membuat material untuk model yang diimpor
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x8888ff,
+                shininess: 50,
+                specular: 0xffffff,
+                flatShading: false
+            });
+            
+            // Contoh URL model OBJ sederhana (bisa diganti dengan path ke file Anda)
+            // Karena kita tidak memiliki server, kita akan membuat model sederhana secara manual
+            // Dalam implementasi nyata, Anda akan menggunakan loader.load() dengan URL file
+            
+            // Membuat model sederhana sebagai contoh
+            const group = new THREE.Group();
+            
+            // Membuat kubus kecil sebagai contoh model
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(0, 0, 0);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            group.add(mesh);
+            
+            // Membuat piramida kecil sebagai contoh model
+            const pyramidGeo = new THREE.ConeGeometry(0.8, 1.5, 4);
+            const pyramidMesh = new THREE.Mesh(pyramidGeo, material);
+            pyramidMesh.position.set(0, 2, 0);
+            pyramidMesh.castShadow = true;
+            pyramidMesh.receiveShadow = true;
+            group.add(pyramidMesh);
+            
+            group.position.set(0, 0, 0);
+            group.scale.set(1.5, 1.5, 1.5);
+            group.visible = false;
+            
+            importedModel = group;
+            scene.add(importedModel);
+        }
+        
+        function setupEventListeners() {
+            // Window resize
+            window.addEventListener('resize', onWindowResize);
+            
+            // Mouse events
+            renderer.domElement.addEventListener('mousedown', onMouseDown);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('mouseup', onMouseUp);
+            renderer.domElement.addEventListener('wheel', onMouseWheel);
+            
+            // Keyboard events
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            
+            // Controls
+            document.getElementById('showCube').addEventListener('click', () => showObject('cube'));
+            document.getElementById('showPyramid').addEventListener('click', () => showObject('pyramid'));
+            document.getElementById('showBoth').addEventListener('click', () => showObject('both'));
+            document.getElementById('showImported').addEventListener('click', () => showObject('imported'));
+            document.getElementById('toggleRotation').addEventListener('click', toggleRotation);
+            document.getElementById('resetRotation').addEventListener('click', resetRotation);
+            
+            // Lighting controls
+            document.getElementById('ambientLight').addEventListener('input', updateAmbientLight);
+            document.getElementById('directionalLight').addEventListener('input', updateDirectionalLight);
+            document.getElementById('specularIntensity').addEventListener('input', updateSpecularIntensity);
+            document.getElementById('lightX').addEventListener('input', updateLightPosition);
+            document.getElementById('lightY').addEventListener('input', updateLightPosition);
+            document.getElementById('lightZ').addEventListener('input', updateLightPosition);
+            
+            // Camera controls
+            document.getElementById('cameraX').addEventListener('input', updateCameraPosition);
+            document.getElementById('cameraY').addEventListener('input', updateCameraPosition);
+            document.getElementById('cameraZ').addEventListener('input', updateCameraPosition);
+            
+            // Transform controls
+            document.getElementById('scaleSlider').addEventListener('input', updateScale);
+            document.getElementById('positionY').addEventListener('input', updatePositionY);
+        }
+        
+        function showObject(type) {
+            // Reset button states
+            document.querySelectorAll('#controls button').forEach(btn => {
+                if (btn.id.startsWith('show')) {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Sembunyikan semua objek terlebih dahulu
+            cube.visible = false;
+            pyramid.visible = false;
+            if (importedModel) importedModel.visible = false;
+            
+            switch(type) {
+                case 'cube':
+                    cube.visible = true;
+                    document.getElementById('showCube').classList.add('active');
+                    break;
+                case 'pyramid':
+                    pyramid.visible = true;
+                    document.getElementById('showPyramid').classList.add('active');
+                    break;
+                case 'both':
+                    cube.visible = true;
+                    pyramid.visible = true;
+                    document.getElementById('showBoth').classList.add('active');
+                    break;
+                case 'imported':
+                    if (importedModel) importedModel.visible = true;
+                    document.getElementById('showImported').classList.add('active');
+                    break;
+            }
+            currentObject = type;
+        }
+        
+        function toggleRotation() {
+            isRotating = !isRotating;
+            document.getElementById('toggleRotation').textContent = isRotating ? '⏸️ Stop' : '▶️ Start';
+        }
+        
+        function resetRotation() {
+            cube.rotation.set(0, 0, 0);
+            pyramid.rotation.set(0, 0, 0);
+            if (importedModel) importedModel.rotation.set(0, 0, 0);
+            
+            // Reset juga rotasi kamera
+            camera.position.set(
+                parseFloat(document.getElementById('cameraX').value),
+                parseFloat(document.getElementById('cameraY').value),
+                parseFloat(document.getElementById('cameraZ').value)
+            );
+            camera.lookAt(0, 0, 0);
+        }
+        
+        function updateAmbientLight() {
+            const intensity = parseFloat(document.getElementById('ambientLight').value);
+            ambientLight.intensity = intensity;
+        }
+        
+        function updateDirectionalLight() {
+            const intensity = parseFloat(document.getElementById('directionalLight').value);
+            directionalLight.intensity = intensity;
+        }
+        
+        function updateSpecularIntensity() {
+            const intensity = parseFloat(document.getElementById('specularIntensity').value);
+            cube.material.shininess = intensity * 100;
+            pyramid.material.shininess = intensity * 100;
+            if (importedModel) {
+                importedModel.traverse(child => {
+                    if (child.isMesh) {
+                        child.material.shininess = intensity * 100;
+                    }
+                });
+            }
+        }
+        
+        function updateLightPosition() {
+            const x = parseFloat(document.getElementById('lightX').value);
+            const y = parseFloat(document.getElementById('lightY').value);
+            const z = parseFloat(document.getElementById('lightZ').value);
+            directionalLight.position.set(x, y, z);
+        }
+        
+        function updateCameraPosition() {
+            const x = parseFloat(document.getElementById('cameraX').value);
+            const y = parseFloat(document.getElementById('cameraY').value);
+            const z = parseFloat(document.getElementById('cameraZ').value);
+            camera.position.set(x, y, z);
+            camera.lookAt(0, 0, 0);
+        }
+        
+        function updateScale() {
+            const scale = parseFloat(document.getElementById('scaleSlider').value);
+            cube.scale.set(scale, scale, scale);
+            pyramid.scale.set(scale, scale, scale);
+            if (importedModel) importedModel.scale.set(scale, scale, scale);
+        }
+        
+        function updatePositionY() {
+            const y = parseFloat(document.getElementById('positionY').value);
+            cube.position.y = y;
+            pyramid.position.y = y;
+            if (importedModel) importedModel.position.y = y;
+        }
+        
+        // Mouse Events
+        function onMouseDown(event) {
+            isMouseDown = true;
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+        }
+        
+        function onMouseMove(event) {
+            if (!isMouseDown) return;
+            
+            const deltaX = event.clientX - mouseX;
+            const deltaY = event.clientY - mouseY;
+            
+            // Target rotation berdasarkan mouse movement
+            targetRotationY += deltaX * 0.01;
+            targetRotationX += deltaY * 0.01;
+            
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+        }
+        
+        function onMouseUp() {
+            isMouseDown = false;
+        }
+        
+        function onMouseWheel(event) {
+            event.preventDefault();
+            const delta = event.deltaY * 0.01;
+            camera.position.z += delta;
+            
+            // Update slider camera Z
+            document.getElementById('cameraZ').value = camera.position.z;
+        }
+        
+        // Keyboard Events
+        function onKeyDown(event) {
+            keys[event.key.toLowerCase()] = true;
+        }
+        
+        function onKeyUp(event) {
+            keys[event.key.toLowerCase()] = false;
+        }
+        
+        function handleKeyboard() {
+            const speed = 0.1;
+            
+            if (keys['w']) {
+                if (currentObject === 'cube') cube.position.z -= speed;
+                if (currentObject === 'pyramid') pyramid.position.z -= speed;
+                if (currentObject === 'both') {
+                    cube.position.z -= speed;
+                    pyramid.position.z -= speed;
+                }
+                if (currentObject === 'imported' && importedModel) importedModel.position.z -= speed;
+            }
+            if (keys['s']) {
+                if (currentObject === 'cube') cube.position.z += speed;
+                if (currentObject === 'pyramid') pyramid.position.z += speed;
+                if (currentObject === 'both') {
+                    cube.position.z += speed;
+                    pyramid.position.z += speed;
+                }
+                if (currentObject === 'imported' && importedModel) importedModel.position.z += speed;
+            }
+            if (keys['a']) {
+                if (currentObject === 'cube') cube.position.x -= speed;
+                if (currentObject === 'pyramid') pyramid.position.x -= speed;
+                if (currentObject === 'both') {
+                    cube.position.x -= speed;
+                    pyramid.position.x -= speed;
+                }
+                if (currentObject === 'imported' && importedModel) importedModel.position.x -= speed;
+            }
+            if (keys['d']) {
+                if (currentObject === 'cube') cube.position.x += speed;
+                if (currentObject === 'pyramid') pyramid.position.x += speed;
+                if (currentObject === 'both') {
+                    cube.position.x += speed;
+                    pyramid.position.x += speed;
+                }
+                if (currentObject === 'imported' && importedModel) importedModel.position.x += speed;
+            }
+            if (keys['q']) {
+                if (currentObject === 'cube') cube.position.y += speed;
+                if (currentObject === 'pyramid') pyramid.position.y += speed;
+                if (currentObject === 'both') {
+                    cube.position.y += speed;
+                    pyramid.position.y += speed;
+                }
+                if (currentObject === 'imported' && importedModel) importedModel.position.y += speed;
+            }
+            if (keys['e']) {
+                if (currentObject === 'cube') cube.position.y -= speed;
+                if (currentObject === 'pyramid') pyramid.position.y -= speed;
+                if (currentObject === 'both') {
+                    cube.position.y -= speed;
+                    pyramid.position.y -= speed;
+                }
+                if (currentObject === 'imported' && importedModel) importedModel.position.y -= speed;
+            }
+            
+            // Update position Y slider jika berubah
+            if (keys['q'] || keys['e']) {
+                if (currentObject === 'cube') document.getElementById('positionY').value = cube.position.y;
+                if (currentObject === 'pyramid') document.getElementById('positionY').value = pyramid.position.y;
+                if (currentObject === 'both') document.getElementById('positionY').value = cube.position.y;
+                if (currentObject === 'imported' && importedModel) document.getElementById('positionY').value = importedModel.position.y;
+            }
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // Loop Animasi
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Smooth rotation for camera
+            actualRotationX += (targetRotationX - actualRotationX) * 0.05;
+            actualRotationY += (targetRotationY - actualRotationY) * 0.05;
+            
+            // Rotasi kamera mengelilingi objek
+            const radius = 10;
+            camera.position.x = radius * Math.sin(actualRotationY) * Math.cos(actualRotationX);
+            camera.position.y = radius * Math.sin(actualRotationX);
+            camera.position.z = radius * Math.cos(actualRotationY) * Math.cos(actualRotationX);
+            camera.lookAt(0, 0, 0);
+            
+            // Update camera sliders
+            document.getElementById('cameraX').value = camera.position.x;
+            document.getElementById('cameraY').value = camera.position.y;
+            document.getElementById('cameraZ').value = camera.position.z;
+            
+            // Rotasi otomatis objek
+            if (isRotating) {
+                if (currentObject === 'cube' || currentObject === 'both') cube.rotation.y += 0.01;
+                if (currentObject === 'pyramid' || currentObject === 'both') pyramid.rotation.y += 0.01;
+                if (currentObject === 'imported' && importedModel) importedModel.rotation.y += 0.01;
+            }
+            
+            // Handle keyboard input
+            handleKeyboard();
+            
+            // Render
+            renderer.render(scene, camera);
+        }
+        
+        // Mulai aplikasi
+        init();
+    </script>
+</body>
+</html>
